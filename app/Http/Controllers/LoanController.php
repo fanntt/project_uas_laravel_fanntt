@@ -24,12 +24,9 @@ class LoanController extends Controller
      */
     public function create()
     {
-        $user = Auth::user();
-        if (!$user || $user->role === 'mahasiswa') {
-            return response()->json(['message' => 'Akses ditolak'], 403);
-        }
-        // Untuk API, biasanya tidak perlu form create
-        return response()->json(['message' => 'Form create peminjaman']);
+        $students = \App\Models\Student::all();
+        $products = \App\Models\Product::all();
+        return view('loans.create', compact('students', 'products'));
     }
 
     /**
@@ -44,15 +41,13 @@ class LoanController extends Controller
             'return_date' => 'nullable|date|after_or_equal:loan_date',
             'status' => 'required|in:pending,approved,returned,rejected',
         ]);
-
         $product = Product::findOrFail($validated['product_id']);
         if ($product->stock < 1) {
-            return response()->json(['message' => 'Stok barang tidak mencukupi'], 422);
+            return back()->withErrors(['product_id' => 'Stok barang tidak mencukupi'])->withInput();
         }
-
         $loan = Loan::create($validated);
         $product->decrement('stock');
-        return response()->json($loan->load(['student', 'product']), 201);
+        return redirect('/loans')->with('success', 'Peminjaman berhasil ditambahkan');
     }
 
     /**
