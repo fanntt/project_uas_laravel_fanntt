@@ -51,8 +51,8 @@ class CategoryController extends Controller
      */
     public function edit(string $id)
     {
-        // Untuk API, biasanya tidak perlu form edit
-        return response()->json(['message' => 'Form edit kategori', 'id' => $id]);
+        $category = Category::findOrFail($id);
+        return view('categories.edit', compact('category'));
     }
 
     /**
@@ -60,12 +60,12 @@ class CategoryController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        $category = Category::findOrFail($id);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
         ]);
-        $category = Category::findOrFail($id);
         $category->update($validated);
-        return response()->json($category);
+        return redirect('/categories')->with('success', 'Kategori berhasil diupdate');
     }
 
     /**

@@ -14,7 +14,7 @@ class ProductController extends Controller
     public function index()
     {
         $products = Product::with('category')->get();
-        return response()->json($products);
+        return view('products.index', compact('products'));
     }
 
     /**
@@ -22,8 +22,8 @@ class ProductController extends Controller
      */
     public function create()
     {
-        // Untuk API, biasanya tidak perlu form create
-        return response()->json(['message' => 'Form create produk']);
+        $categories = \App\Models\Category::all();
+        return view('products.create', compact('categories'));
     }
 
     /**
@@ -38,7 +38,7 @@ class ProductController extends Controller
             'description' => 'nullable|string',
         ]);
         $product = Product::create($validated);
-        return response()->json($product->load('category'), 201);
+        return redirect('/products')->with('success', 'Produk berhasil ditambahkan');
     }
 
     /**
@@ -55,8 +55,9 @@ class ProductController extends Controller
      */
     public function edit(string $id)
     {
-        // Untuk API, biasanya tidak perlu form edit
-        return response()->json(['message' => 'Form edit produk', 'id' => $id]);
+        $product = Product::findOrFail($id);
+        $categories = \App\Models\Category::all();
+        return view('products.edit', compact('product', 'categories'));
     }
 
     /**
@@ -64,15 +65,15 @@ class ProductController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        $product = Product::findOrFail($id);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:irfan_categories,id',
             'stock' => 'required|integer|min:0',
             'description' => 'nullable|string',
         ]);
-        $product = Product::findOrFail($id);
         $product->update($validated);
-        return response()->json($product->load('category'));
+        return redirect('/products')->with('success', 'Produk berhasil diupdate');
     }
 
     /**
@@ -82,6 +83,6 @@ class ProductController extends Controller
     {
         $product = Product::findOrFail($id);
         $product->delete();
-        return response()->json(['message' => 'Produk berhasil dihapus']);
+        return redirect('/products')->with('success', 'Produk berhasil dihapus');
     }
 }
