@@ -64,12 +64,10 @@ class LoanController extends Controller
      */
     public function edit(string $id)
     {
-        $user = Auth::user();
-        if (!$user || $user->role === 'mahasiswa') {
-            return response()->json(['message' => 'Akses ditolak'], 403);
-        }
-        // Untuk API, biasanya tidak perlu form edit
-        return response()->json(['message' => 'Form edit peminjaman', 'id' => $id]);
+        $loan = Loan::findOrFail($id);
+        $students = \App\Models\Student::all();
+        $products = \App\Models\Product::all();
+        return view('loans.edit', compact('loan', 'students', 'products'));
     }
 
     /**
@@ -79,7 +77,7 @@ class LoanController extends Controller
     {
         $user = Auth::user();
         if (!$user || $user->role === 'mahasiswa') {
-            return response()->json(['message' => 'Akses ditolak'], 403);
+            return redirect('/loans')->with('success', 'Akses ditolak');
         }
         $loan = Loan::findOrFail($id);
         $validated = $request->validate([
@@ -92,7 +90,7 @@ class LoanController extends Controller
         // Hanya admin dan petugas yang boleh mengubah status
         if (isset($validated['status']) && $validated['status'] !== $loan->status) {
             if (!in_array($user->role, ['admin', 'petugas'])) {
-                return response()->json(['message' => 'Hanya admin dan petugas yang dapat mengubah status peminjaman'], 403);
+                return redirect('/loans')->with('success', 'Hanya admin dan petugas yang dapat mengubah status peminjaman');
             }
         }
         $oldStatus = $loan->status;
@@ -104,7 +102,7 @@ class LoanController extends Controller
                 $product->increment('stock');
             }
         }
-        return response()->json($loan->load(['student', 'product']));
+        return redirect('/loans')->with('success', 'Peminjaman berhasil diupdate');
     }
 
     /**
