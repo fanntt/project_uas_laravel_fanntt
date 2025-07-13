@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
@@ -11,7 +12,8 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        //
+        $categories = Category::all();
+        return response()->json($categories);
     }
 
     /**
@@ -19,7 +21,8 @@ class CategoryController extends Controller
      */
     public function create()
     {
-        //
+        // Untuk API, biasanya tidak perlu form create
+        return response()->json(['message' => 'Form create kategori']);
     }
 
     /**
@@ -27,7 +30,11 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+        $category = Category::create($validated);
+        return response()->json($category, 201);
     }
 
     /**
@@ -35,7 +42,8 @@ class CategoryController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $category = Category::findOrFail($id);
+        return response()->json($category);
     }
 
     /**
@@ -43,7 +51,8 @@ class CategoryController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        // Untuk API, biasanya tidak perlu form edit
+        return response()->json(['message' => 'Form edit kategori', 'id' => $id]);
     }
 
     /**
@@ -51,7 +60,12 @@ class CategoryController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+        $category = Category::findOrFail($id);
+        $category->update($validated);
+        return response()->json($category);
     }
 
     /**
@@ -59,6 +73,8 @@ class CategoryController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $category = Category::findOrFail($id);
+        $category->delete();
+        return response()->json(['message' => 'Kategori berhasil dihapus']);
     }
 }

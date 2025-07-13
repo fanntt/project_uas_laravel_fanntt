@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\CategoryController;
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -19,3 +21,5 @@ Route::middleware(['role:admin,petugas'])->group(function () {
         return 'Halaman Petugas/Admin';
     });
 });
+
+Route::resource('categories', CategoryController::class);
