@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Student;
 use Illuminate\Http\Request;
 
 class StudentController extends Controller
@@ -11,7 +12,8 @@ class StudentController extends Controller
      */
     public function index()
     {
-        //
+        $students = Student::all();
+        return response()->json($students);
     }
 
     /**
@@ -19,7 +21,8 @@ class StudentController extends Controller
      */
     public function create()
     {
-        //
+        // Untuk API, biasanya tidak perlu form create
+        return response()->json(['message' => 'Form create mahasiswa']);
     }
 
     /**
@@ -27,7 +30,14 @@ class StudentController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'nim' => 'required|string|max:50|unique:irfan_students,nim',
+            'email' => 'required|email|unique:irfan_students,email',
+            'phone' => 'required|string|max:20',
+        ]);
+        $student = Student::create($validated);
+        return response()->json($student, 201);
     }
 
     /**
@@ -35,7 +45,8 @@ class StudentController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $student = Student::findOrFail($id);
+        return response()->json($student);
     }
 
     /**
@@ -43,7 +54,8 @@ class StudentController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        // Untuk API, biasanya tidak perlu form edit
+        return response()->json(['message' => 'Form edit mahasiswa', 'id' => $id]);
     }
 
     /**
@@ -51,7 +63,15 @@ class StudentController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $student = Student::findOrFail($id);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'nim' => 'required|string|max:50|unique:irfan_students,nim,' . $student->id,
+            'email' => 'required|email|unique:irfan_students,email,' . $student->id,
+            'phone' => 'required|string|max:20',
+        ]);
+        $student->update($validated);
+        return response()->json($student);
     }
 
     /**
@@ -59,6 +79,8 @@ class StudentController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $student = Student::findOrFail($id);
+        $student->delete();
+        return response()->json(['message' => 'Mahasiswa berhasil dihapus']);
     }
 }
