@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Loan;
+use App\Models\Student;
+use App\Models\Product;
 use Illuminate\Http\Request;
 
 class LoanController extends Controller
@@ -11,7 +14,8 @@ class LoanController extends Controller
      */
     public function index()
     {
-        //
+        $loans = Loan::with(['student', 'product'])->get();
+        return response()->json($loans);
     }
 
     /**
@@ -19,7 +23,8 @@ class LoanController extends Controller
      */
     public function create()
     {
-        //
+        // Untuk API, biasanya tidak perlu form create
+        return response()->json(['message' => 'Form create peminjaman']);
     }
 
     /**
@@ -27,7 +32,15 @@ class LoanController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'student_id' => 'required|exists:irfan_students,id',
+            'product_id' => 'required|exists:irfan_products,id',
+            'loan_date' => 'required|date',
+            'return_date' => 'nullable|date|after_or_equal:loan_date',
+            'status' => 'required|in:pending,approved,returned,rejected',
+        ]);
+        $loan = Loan::create($validated);
+        return response()->json($loan->load(['student', 'product']), 201);
     }
 
     /**
@@ -35,7 +48,8 @@ class LoanController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $loan = Loan::with(['student', 'product'])->findOrFail($id);
+        return response()->json($loan);
     }
 
     /**
@@ -43,7 +57,8 @@ class LoanController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        // Untuk API, biasanya tidak perlu form edit
+        return response()->json(['message' => 'Form edit peminjaman', 'id' => $id]);
     }
 
     /**
@@ -51,7 +66,16 @@ class LoanController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $loan = Loan::findOrFail($id);
+        $validated = $request->validate([
+            'student_id' => 'required|exists:irfan_students,id',
+            'product_id' => 'required|exists:irfan_products,id',
+            'loan_date' => 'required|date',
+            'return_date' => 'nullable|date|after_or_equal:loan_date',
+            'status' => 'required|in:pending,approved,returned,rejected',
+        ]);
+        $loan->update($validated);
+        return response()->json($loan->load(['student', 'product']));
     }
 
     /**
@@ -59,6 +83,8 @@ class LoanController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $loan = Loan::findOrFail($id);
+        $loan->delete();
+        return response()->json(['message' => 'Peminjaman berhasil dihapus']);
     }
 }
