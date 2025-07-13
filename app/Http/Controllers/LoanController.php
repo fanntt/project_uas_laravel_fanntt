@@ -16,7 +16,7 @@ class LoanController extends Controller
     public function index()
     {
         $loans = Loan::with(['student', 'product'])->get();
-        return response()->json($loans);
+        return view('loans.index', compact('loans'));
     }
 
     /**
