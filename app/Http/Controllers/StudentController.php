@@ -13,7 +13,7 @@ class StudentController extends Controller
     public function index()
     {
         $students = Student::all();
-        return response()->json($students);
+        return view('students.index', compact('students'));
     }
 
     /**
@@ -21,8 +21,7 @@ class StudentController extends Controller
      */
     public function create()
     {
-        // Untuk API, biasanya tidak perlu form create
-        return response()->json(['message' => 'Form create mahasiswa']);
+        return view('students.create');
     }
 
     /**
@@ -37,7 +36,7 @@ class StudentController extends Controller
             'phone' => 'required|string|max:20',
         ]);
         $student = Student::create($validated);
-        return response()->json($student, 201);
+        return redirect('/students')->with('success', 'Mahasiswa berhasil ditambahkan');
     }
 
     /**
@@ -54,8 +53,8 @@ class StudentController extends Controller
      */
     public function edit(string $id)
     {
-        // Untuk API, biasanya tidak perlu form edit
-        return response()->json(['message' => 'Form edit mahasiswa', 'id' => $id]);
+        $student = Student::findOrFail($id);
+        return view('students.edit', compact('student'));
     }
 
     /**
@@ -71,7 +70,7 @@ class StudentController extends Controller
             'phone' => 'required|string|max:20',
         ]);
         $student->update($validated);
-        return response()->json($student);
+        return redirect('/students')->with('success', 'Mahasiswa berhasil diupdate');
     }
 
     /**
@@ -81,6 +80,6 @@ class StudentController extends Controller
     {
         $student = Student::findOrFail($id);
         $student->delete();
-        return response()->json(['message' => 'Mahasiswa berhasil dihapus']);
+        return redirect('/students')->with('success', 'Mahasiswa berhasil dihapus');
     }
 }
