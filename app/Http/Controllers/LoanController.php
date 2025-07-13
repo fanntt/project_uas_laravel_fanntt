@@ -6,6 +6,7 @@ use App\Models\Loan;
 use App\Models\Student;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LoanController extends Controller
 {
@@ -23,6 +24,10 @@ class LoanController extends Controller
      */
     public function create()
     {
+        $user = Auth::user();
+        if (!$user || $user->role === 'mahasiswa') {
+            return response()->json(['message' => 'Akses ditolak'], 403);
+        }
         // Untuk API, biasanya tidak perlu form create
         return response()->json(['message' => 'Form create peminjaman']);
     }
@@ -39,7 +44,14 @@ class LoanController extends Controller
             'return_date' => 'nullable|date|after_or_equal:loan_date',
             'status' => 'required|in:pending,approved,returned,rejected',
         ]);
+
+        $product = Product::findOrFail($validated['product_id']);
+        if ($product->stock < 1) {
+            return response()->json(['message' => 'Stok barang tidak mencukupi'], 422);
+        }
+
         $loan = Loan::create($validated);
+        $product->decrement('stock');
         return response()->json($loan->load(['student', 'product']), 201);
     }
 
@@ -57,6 +69,10 @@ class LoanController extends Controller
      */
     public function edit(string $id)
     {
+        $user = Auth::user();
+        if (!$user || $user->role === 'mahasiswa') {
+            return response()->json(['message' => 'Akses ditolak'], 403);
+        }
         // Untuk API, biasanya tidak perlu form edit
         return response()->json(['message' => 'Form edit peminjaman', 'id' => $id]);
     }
@@ -66,6 +82,10 @@ class LoanController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        $user = Auth::user();
+        if (!$user || $user->role === 'mahasiswa') {
+            return response()->json(['message' => 'Akses ditolak'], 403);
+        }
         $loan = Loan::findOrFail($id);
         $validated = $request->validate([
             'student_id' => 'required|exists:irfan_students,id',
@@ -74,7 +94,21 @@ class LoanController extends Controller
             'return_date' => 'nullable|date|after_or_equal:loan_date',
             'status' => 'required|in:pending,approved,returned,rejected',
         ]);
+        // Hanya admin dan petugas yang boleh mengubah status
+        if (isset($validated['status']) && $validated['status'] !== $loan->status) {
+            if (!in_array($user->role, ['admin', 'petugas'])) {
+                return response()->json(['message' => 'Hanya admin dan petugas yang dapat mengubah status peminjaman'], 403);
+            }
+        }
+        $oldStatus = $loan->status;
         $loan->update($validated);
+        // Jika status berubah dari selain 'returned' menjadi 'returned', stok produk dikembalikan
+        if ($oldStatus !== 'returned' && $validated['status'] === 'returned') {
+            $product = Product::find($loan->product_id);
+            if ($product) {
+                $product->increment('stock');
+            }
+        }
         return response()->json($loan->load(['student', 'product']));
     }
 
@@ -83,8 +117,47 @@ class LoanController extends Controller
      */
     public function destroy(string $id)
     {
+        $user = Auth::user();
+        if (!$user || $user->role === 'mahasiswa') {
+            return response()->json(['message' => 'Akses ditolak'], 403);
+        }
         $loan = Loan::findOrFail($id);
         $loan->delete();
         return response()->json(['message' => 'Peminjaman berhasil dihapus']);
+    }
+
+    public function approve($id)
+    {
+        $user = Auth::user();
+        if (!$user || !in_array($user->role, ['admin', 'petugas'])) {
+            return response()->json(['message' => 'Akses ditolak'], 403);
+        }
+        $loan = Loan::findOrFail($id);
+        if ($loan->status !== 'pending') {
+            return response()->json(['message' => 'Hanya peminjaman dengan status pending yang bisa di-approve'], 422);
+        }
+        $loan->status = 'approved';
+        $loan->save();
+        return response()->json(['message' => 'Peminjaman disetujui', 'loan' => $loan->load(['student', 'product'])]);
+    }
+
+    public function reject($id)
+    {
+        $user = Auth::user();
+        if (!$user || !in_array($user->role, ['admin', 'petugas'])) {
+            return response()->json(['message' => 'Akses ditolak'], 403);
+        }
+        $loan = Loan::findOrFail($id);
+        if ($loan->status !== 'pending') {
+            return response()->json(['message' => 'Hanya peminjaman dengan status pending yang bisa di-reject'], 422);
+        }
+        $loan->status = 'rejected';
+        $loan->save();
+        // Kembalikan stok barang karena tidak jadi dipinjam
+        $product = Product::find($loan->product_id);
+        if ($product) {
+            $product->increment('stock');
+        }
+        return response()->json(['message' => 'Peminjaman ditolak', 'loan' => $loan->load(['student', 'product'])]);
     }
 }

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\LoanController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -25,3 +26,5 @@ Route::middleware(['role:admin,petugas'])->group(function () {
 
 Route::resource('categories', CategoryController::class);
 Route::resource('products', ProductController::class);
+Route::post('loans/{id}/approve', [LoanController::class, 'approve'])->name('loans.approve');
+Route::post('loans/{id}/reject', [LoanController::class, 'reject'])->name('loans.reject');
